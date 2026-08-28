@@ -20,6 +20,14 @@ test("serves the account-scoped Claude gateway model catalog without proxying up
   });
 });
 
+test("does not mistake a Codex model catalog request for Claude discovery", () => {
+  const request = new Request("http://127.0.0.1:17841/v1/models?limit=1000", {
+    headers: { authorization: "Bearer codex-oauth-token" },
+  });
+
+  expect(isClaudeGatewayModelsRequest(request)).toBe(false);
+});
+
 test("advertises the routed Claude model context window used by client preflight", async () => {
   const config = { ...defaultConfig("full"), proAvailable: true, useEnhancedWebSessionMode: true };
   const body = await claudeGatewayModelsResponse(config).json() as { data: Array<Record<string, unknown>> };

@@ -110,7 +110,9 @@ jobs:
           cp scripts/install.sh release-assets/install.sh
           cp scripts/install-launcher.sh release-assets/install-launcher.sh
           cp scripts/install-launcher.ps1 release-assets/install-launcher.ps1
-          cp assets/demo.gif "release-assets/codex-web-gpt-${RELEASE_TAG#v}-demo.gif"
+          # Keep the existing asset contract while making manual dispatch use its selected tag.
+          export GITHUB_REF_NAME="$RELEASE_TAG"
+          cp assets/demo.gif "release-assets/codex-web-gpt-${GITHUB_REF_NAME#v}-demo.gif"
       - name: Flatten release assets
         run: |
           cd release-assets

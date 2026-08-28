@@ -39,7 +39,11 @@ export function preferredClaudeGatewayModelIds(config: AppConfig): string[] {
 }
 
 export function isClaudeGatewayModelsRequest(request: Request): boolean {
-  return new URL(request.url).searchParams.get("limit") === "1000";
+  // Codex also requests `/v1/models?limit=1000`. The local Claude integration has a
+  // dedicated token, so require it here instead of routing every large model request to the
+  // Claude-shaped `{ data: [...] }` response and hiding the native Codex catalog.
+  return new URL(request.url).searchParams.get("limit") === "1000"
+    && request.headers.get("authorization") === "Bearer codex-chatgpt-web-local";
 }
 
 export function claudeGatewayModelsResponse(config: AppConfig): Response {
