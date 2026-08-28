@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { formatErrorResponse } from "./bridge";
 import type { AppConfig } from "./config";
 import type { CodexModelContextOverride } from "./codex-integration";
-import { augmentNativeModelCatalog } from "./model-catalog";
+import { augmentNativeModelCatalog, nativeCatalogHasSolBackedWebEligibility } from "./model-catalog";
 import { forwardNativeCodexRequest, type NativeFetch } from "./native-passthrough";
 
 export async function modelsRequest(
@@ -20,7 +20,14 @@ export async function modelsRequest(
   if (!upstream.ok) return upstream;
   let catalog: Record<string, unknown>;
   try {
-    catalog = augmentNativeModelCatalog(await upstream.json(), config, contextOverride?.());
+    const nativeCatalog = await upstream.json();
+    if (!config.solAvailable && nativeCatalogHasSolBackedWebEligibility(nativeCatalog)) {
+      // Luna Reserve removes the browser effort selector, which made the setup probe report a
+      // false Luna-only capability. The hidden native reserve row is the account-level signal that
+      // the Sol-backed Web routes remain valid; retain that capability for this running service.
+      config.solAvailable = true;
+    }
+    catalog = augmentNativeModelCatalog(nativeCatalog, config, contextOverride?.());
   } catch (error) {
     return formatErrorResponse(502, "invalid_response_error", error instanceof Error ? error.message : String(error));
   }

@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import {
   launcherCapabilityProbeRequired,
+  mergeLauncherAccountCapabilities,
   setupIntegrationSelection,
   setupProxyIsReady,
 } from "../src/setup";
@@ -45,4 +46,23 @@ test("setup can install Codex and Claude Code independently without changing the
   expect(setupIntegrationSelection()).toEqual({ codex: true, claude: true });
   expect(setupIntegrationSelection("codex")).toEqual({ codex: true, claude: false });
   expect(setupIntegrationSelection("claude")).toEqual({ codex: false, claude: true });
+});
+
+test("launcher setup keeps Sol-backed Web routes during a Luna Reserve fallback", () => {
+  expect(mergeLauncherAccountCapabilities(
+    { solAvailable: true, proAvailable: false },
+    { solAvailable: false, proAvailable: false },
+  )).toEqual({ solAvailable: true, proAvailable: false });
+  expect(mergeLauncherAccountCapabilities(
+    { solAvailable: true, proAvailable: true },
+    { solAvailable: false, proAvailable: false },
+  )).toEqual({ solAvailable: true, proAvailable: true });
+  expect(mergeLauncherAccountCapabilities(
+    undefined,
+    { solAvailable: false, proAvailable: false },
+  )).toEqual({ solAvailable: false, proAvailable: false });
+  expect(mergeLauncherAccountCapabilities(
+    { solAvailable: true, proAvailable: true },
+    { solAvailable: true, proAvailable: false },
+  )).toEqual({ solAvailable: true, proAvailable: false });
 });

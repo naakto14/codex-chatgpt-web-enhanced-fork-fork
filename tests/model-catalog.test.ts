@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { defaultConfig } from "../src/config";
 import { CHATGPT_WEB_LUNA_MODEL_ROUTE, CHATGPT_WEB_MODEL_ROUTES, resolveChatGptWebContextLimits } from "../src/chatgpt-web-models";
-import { augmentNativeModelCatalog } from "../src/model-catalog";
+import { augmentNativeModelCatalog, nativeCatalogHasSolBackedWebEligibility } from "../src/model-catalog";
 
 function source(): Record<string, unknown> {
   return {
@@ -222,6 +222,36 @@ describe("native /models augmentation", () => {
       effective_context_window_percent: 100,
       auto_compact_token_limit: 1_050_000,
     });
+  });
+
+  test("keeps Sol-backed Web routes when the native catalog reports Luna Reserve", () => {
+    const native = source();
+    (native.models as Array<Record<string, unknown>>).splice(2, 0, {
+      slug: "gpt-reserve",
+      display_name: "GPT-Reserve",
+      visibility: "hide",
+      supported_in_api: true,
+      supported_reasoning_levels: [{ effort: "medium", description: "Medium" }],
+    });
+    const result = augmentNativeModelCatalog(native, defaultConfig("browser-only"));
+    const models = result.models as Array<Record<string, unknown>>;
+
+    expect(models.map(model => model.slug)).toContain("chatgpt-web/high");
+    expect(models.find(model => model.slug === "gpt-reserve")).toMatchObject({ visibility: "hide" });
+  });
+
+  test("recognizes only an API-supported hidden reserve row as Sol-backed eligibility", () => {
+    const native = source();
+    (native.models as Array<Record<string, unknown>>).push({
+      slug: "gpt-reserve",
+      visibility: "hide",
+      supported_in_api: true,
+    });
+    expect(nativeCatalogHasSolBackedWebEligibility(native)).toBe(true);
+    expect(nativeCatalogHasSolBackedWebEligibility({
+      models: [{ slug: "gpt-reserve", visibility: "hide", supported_in_api: false }],
+    })).toBe(false);
+    expect(nativeCatalogHasSolBackedWebEligibility({ models: [{ slug: "gpt-5.6-sol" }] })).toBe(false);
   });
 
   test("raises only native maximum windows for an explicit Codex context override", () => {

@@ -22,6 +22,21 @@ function slug(value: unknown): string | undefined {
   return typeof candidate === "string" ? candidate : undefined;
 }
 
+/**
+ * The native catalog keeps the reserve row hidden, but its presence is the durable account-level
+ * signal that Sol-backed ChatGPT Web routes are available. During Luna Reserve the browser effort
+ * selector disappears temporarily, so capability probing alone cannot distinguish that state from
+ * a genuinely Luna-only account.
+ */
+export function nativeCatalogHasSolBackedWebEligibility(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const models = (value as JsonObject).models;
+  if (!Array.isArray(models)) return false;
+  return models.some(model => slug(model) === "gpt-reserve"
+    && model && typeof model === "object" && !Array.isArray(model)
+    && (model as JsonObject).supported_in_api === true);
+}
+
 function reasoningLevel(template: JsonObject, effort: string, description: string): JsonObject {
   const levels = Array.isArray(template.supported_reasoning_levels)
     ? template.supported_reasoning_levels.filter(level => level && typeof level === "object" && !Array.isArray(level)) as JsonObject[]

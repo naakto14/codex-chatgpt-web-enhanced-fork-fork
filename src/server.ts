@@ -403,6 +403,9 @@ export function startServer(
             dependencies.fetchUpstream,
             readCodexModelContextOverride,
           );
+          // `modelsRequest` may recover Sol availability from the hidden native reserve row. Keep
+          // the live request config in sync so a subsequent Web model request is accepted too.
+          if (catalogConfig.solAvailable) config.solAvailable = true;
           if (response.ok) {
             successfulModelCatalogRequests += 1;
             lastSuccessfulModelCatalogRequestAt = new Date().toISOString();

@@ -109,6 +109,23 @@ export function launcherCapabilityProbeRequired(
     || typeof existing.proAvailable !== "boolean";
 }
 
+export function mergeLauncherAccountCapabilities(
+  existing: Pick<AppConfig, "solAvailable" | "proAvailable"> | undefined,
+  inspected: Pick<AppConfig, "solAvailable" | "proAvailable">,
+): Pick<AppConfig, "solAvailable" | "proAvailable"> {
+  // Luna Reserve temporarily removes the Sol effort control from the ChatGPT composer while the
+  // account is still Plus/Pro eligible. Do not persist that transient fallback as a Luna-only
+  // account, or the bridge drops the additional ChatGPT Web routes.
+  if (existing?.solAvailable === true && inspected.solAvailable === false) return {
+    solAvailable: true,
+    proAvailable: existing.proAvailable,
+  };
+  return {
+    solAvailable: inspected.solAvailable === true,
+    proAvailable: inspected.proAvailable === true,
+  };
+}
+
 export function existingFullSetupCredentials(existing: AppConfig | undefined): ExistingFullSetupCredentials {
   const tunnel = existing?.mode === "full" ? existing.tunnel : undefined;
   return {
@@ -269,9 +286,15 @@ async function inspectLauncherCapabilities(
     detectCapabilities,
     expectedProfile,
   });
+  const capabilities = detectCapabilities
+    ? mergeLauncherAccountCapabilities(existing, {
+      solAvailable: inspected.solAvailable === true,
+      proAvailable: inspected.proAvailable === true,
+    })
+    : undefined;
   return {
-    solAvailable: detectCapabilities ? inspected.solAvailable === true : existing!.solAvailable,
-    proAvailable: detectCapabilities ? inspected.proAvailable === true : existing!.proAvailable,
+    solAvailable: detectCapabilities ? capabilities!.solAvailable : existing!.solAvailable,
+    proAvailable: detectCapabilities ? capabilities!.proAvailable : existing!.proAvailable,
   };
 }
 

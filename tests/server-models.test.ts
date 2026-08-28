@@ -129,6 +129,37 @@ test("Luna-only account exposes no paid ChatGPT Web routes", async () => {
     .toEqual(["chatgpt-web/luna"]);
 });
 
+test("recovers Sol-backed Web routes from the hidden reserve row during Luna Reserve", async () => {
+  const config = defaultConfig("browser-only");
+  config.solAvailable = false;
+  const response = await modelsRequest(
+    new Request("http://127.0.0.1:17841/v1/models", {
+      headers: { authorization: "Bearer codex-oauth-token" },
+    }),
+    config,
+    async () => Response.json({
+      models: [{
+        slug: "gpt-5.6-sol",
+        display_name: "5.6 Sol",
+        visibility: "list",
+        supported_in_api: true,
+        supported_reasoning_levels: [{ effort: "low", description: "Low" }],
+        tool_mode: "code_mode_only",
+      }, {
+        slug: "gpt-reserve",
+        display_name: "GPT-Reserve",
+        visibility: "hide",
+        supported_in_api: true,
+      }],
+    }),
+  );
+  const body = await response.json() as { models: Array<{ slug: string; visibility?: string }> };
+  expect(config.solAvailable).toBe(true);
+  expect(body.models.filter(model => model.slug.startsWith("chatgpt-web/")).map(model => model.slug))
+    .toEqual(["chatgpt-web/light", "chatgpt-web/medium", "chatgpt-web/high"]);
+  expect(body.models.find(model => model.slug === "gpt-reserve")).toMatchObject({ visibility: "hide" });
+});
+
 test("ChatGPT-only native catalog rows do not turn model discovery into a 502", async () => {
   const config = defaultConfig("browser-only");
   const response = await modelsRequest(
