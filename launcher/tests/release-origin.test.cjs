@@ -4,7 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const repositoryRoot = path.resolve(__dirname, "../..");
-const releaseRepository = "Evanlau1798/codex-chatgpt-web";
+const releaseRepository = "naakto14/codex-chatgpt-web-enhanced-fork-fork";
 
 test("Enhanced release installers and launcher updates use the fork release origin", () => {
   const installShell = fs.readFileSync(path.join(repositoryRoot, "scripts/install.sh"), "utf8");
